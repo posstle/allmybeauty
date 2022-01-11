@@ -1,0 +1,13 @@
+package com.spring.allmybeauty.product.register.domain;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProdCompMapVO {
+	private long productId;
+	private String comno;
+}

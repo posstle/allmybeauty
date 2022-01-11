@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">	
+	
+<mapper namespace="com.spring.allmybeauty.member.mapper.MemberMapper">
+
+	<resultMap id="authorityMap" type="com.spring.allmybeauty.member.domain.AuthorityVO">
+		<result property="mid" column="mid" />
+		<result property="authority" column="authority"/>
+	</resultMap>
+	
+	<resultMap id="memberMap" type="com.spring.allmybeauty.member.domain.MemberVO">
+		<result property="mid" column="mid"/>
+		<result property="mpw" column="mpw"/>
+		<result property="mname" column="mname"/>
+		<result property="mgender" column="mgender"/>
+		<result property="memail" column="memail"/>
+		<result property="mphone" column="mphone"/>
+		<result property="mregDate" column="mregDate"/>
+		<result property="mpostalCode" column="mpostalCode"/>
+		<result property="maddress" column="maddress"/>
+		<result property="mdetailAddress" column="mdetailAddress"/>
+		<result property="mskinType" column="mskinType"/>
+		<result property="mdelFlag" column="mdelFlag"/>
+		<result property="enabled" column="enabled" />
+		<result property="point" column="point" />
+		
+		<!-- 권한 정보가 저장됨 -->
+		<collection property="authorityList" resultMap="authorityMap"/>
+		
+	</resultMap>
+
+	<!-- 특정 회원 조회(스프링 시큐리티도 사용함) 지금 사용 안하고 있음-->
+	<select id="memberSelect" resultMap="memberMap">
+		<![CDATA[
+			SELECT mem.mid, mem.mpw, mem.mname, mem.mgender, mem.memail, mem.mphone, mem.mregdate, 
+				   mem.mpostalCode, mem.maddress, mem.mdetailAddress, mem.mskinType, mem.mdelflag, auth.authority, mem.enabled, mem.point
+			FROM AMB.MEMBER mem INNER JOIN AMB.MEMBER_authorities auth ON mem.mid = auth.mid
+			WHERE mem.mid = #{mid} and mdelflag = 0 and enabled = 0
+		]]>
+	</select>
+	
+	<!-- 로그인 --> 
+	<select id="memberLogin" resultType="com.spring.allmybeauty.member.domain.MemberVO">
+		SELECT mid, mpw, mname
+		FROM AMB.MEMBER
+		WHERE mdelflag = 0 and enabled = 0 and mid = #{mid}  
+	</select>
+	
+	
+	<!-- 회원 등록 : 회원 등록 시 회원 권한 추가도 같이 수행 -->
+	<insert id="memberInsert">
+		INSERT INTO AMB.MEMBER
+		VALUES (#{mid}, #{mpw}, #{mname}, #{mgender}, #{memail}, #{mphone}, DEFAULT, 
+				#{mpostalCode}, #{maddress}, #{mdetailAddress}, #{mskinType}, #{mdelFlag}, #{enabled}, DEFAULT)
+	</insert>
+	
+	<!-- 아이디 중복검사 -->
+	<select id="idCheck" resultType="int">
+		SELECT count(*) 
+		FROM AMB.MEMBER
+		WHERE mid = #{mid}
+	</select>
+	
+	<!-- 아이디 찾기 -->
+	<select id="idSearch" resultType="com.spring.allmybeauty.member.domain.MemberVO">
+		SELECT mid
+		from AMB.MEMBER
+		WHERE mname = #{mname} AND memail = #{memail}
+	</select>
+	
+	<!-- 비밀번호 찾기 전 인증단계 -->
+	<select id="pwSearch" resultType="com.spring.allmybeauty.member.domain.MemberVO">
+		SELECT mid, mpw
+		from AMB.MEMBER
+		WHERE mid = #{mid} AND memail = #{memail}
+	</select>
+	
+	<!-- 비밀번호 찾기(변경) -->
+	<update id="pwSearchSuccess">
+       UPDATE AMB.member
+       SET mpw = #{mpw}
+       WHERE mid = #{mid}          
+    </update>
+	
+	<!-- 회원 권한 추가 -->
+	<insert id="memberInsertAuthority">
+		INSERT INTO AMB.MEMBER_AUTHORITIES
+		VALUES (#{mid}, DEFAULT)
+	</insert>
+	
+</mapper>

@@ -1,0 +1,19 @@
+@charset "UTF-8";
+
+/* join.jsp의 인증번호 박스*/  
+#mail_check_input_box_false{
+    background-color:#ebebe4;
+}
+ 
+#mail_check_input_box_true{
+    background-color:white;
+}
+
+/* 인증번호 일치여부 */
+.correct{
+    color : green;
+}
+
+.incorrect{
+    color : red;
+}  

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	 
+<!-- MapperInterface 사용 -->
+<mapper namespace="com.spring.allmybeauty.QnA.common.comment.mapper.BCommentMapper">
+	
+	
+	<!-- 게시물에 대한 댓글 목록 조회  (페이징처리) -->	
+	<select id="selectCnoList" resultType="com.spring.allmybeauty.QnA.common.comment.domain.BCommentVO">
+	<![CDATA[
+		SELECT 
+				cno,
+				bno,
+				mid,
+				cregDate,
+				ccontent,
+				creply,
+				cdelFlag,
+				lvl
+		FROM ( SELECT ROWNUM rn, b.*
+			   FROM ( SELECT LEVEL lvl, a.*
+					  FROM (SELECT /* + INDEX_ASC (a PK_BCOMMENT_CNO) */*
+							FROM AMB.bcomment
+							WHERE bno = #{bCommentPagingDTO.bno}
+						)a
+					  START WITH creply IS NULL
+					  CONNECT BY PRIOR  cno = creply
+				) b
+			)
+		WHERE rn BETWEEN #{bCommentPagingDTO.pageNum} * #{bCommentPagingDTO.rowAmountPerPage}
+						-(#{bCommentPagingDTO.rowAmountPerPage} - 1)
+					AND #{bCommentPagingDTO.pageNum} * #{bCommentPagingDTO.rowAmountPerPage}
+	]]>
+	</select>
+	
+	
+	<!-- 특정 게시물에 대한 댓글 등록  -->
+	<insert id="insertBCommentForBoard">
+		<selectKey keyProperty="cno" order="BEFORE" resultType="long">
+			SELECT AMB.SQ_BCOMMENT_CNO.NEXTVAL 
+			FROM dual
+		</selectKey>
+		INSERT INTO AMB.bcomment
+		VALUES (
+				#{cno},
+				#{bno},
+				#{mid},
+				sysdate,
+				#{ccontent},
+				DEFAULT,DEFAULT
+			)
+		
+	</insert>	
+
+	
+	<!-- 댓글에 대한 답글 등록  -->
+	<insert id="insertBCommentForReply">
+		<selectKey keyProperty="cno" order="BEFORE" resultType="long">
+			SELECT AMB.SQ_BCOMMENT_creply.NEXTVAL 
+			FROM dual
+		</selectKey>
+		INSERT INTO AMB.bcomment
+		VALUES (
+				#{cno},
+				#{bno},
+				#{mid},
+				DEFAULT,
+				#{ccontent},
+				#{creply},
+				DEFAULT
+			)
+	</insert>
+	
+	
+			
+	<!-- 특정게시물에 대한 특정 댓글 답글 조회 -->
+	<select id="selectBComment" resultType="com.spring.allmybeauty.QnA.common.comment.domain.BCommentVO">
+	<![CDATA[
+		SELECT * FROM AMB.bcomment 
+		WHERE bno= #{bno} AND cno = #{cno}
+	]]>
+	</select>
+
+	
+	<!-- 특정 게시물에 대한 댓글 답글 수정  -->	
+	<update id="updateBComment">
+		<![CDATA[
+			UPDATE AMB.bcomment
+			SET ccontent = #{ccontent}
+			WHERE bno= #{bno} AND cno = #{cno}			
+		]]>
+	</update>
+
+
+	<!-- 특정 게시물에 대한 댓글/답글 삭제  -->	
+	<delete id="deleteBComment">
+	<![CDATA[
+		DELETE FROM AMB.bcomment 
+		WHERE bno= #{bno} AND cno = #{cno}
+	]]>
+	</delete>
+
+	
+	<!-- 특정 게시물의 댓글 총 개수 확인  -->	
+	<select id="selectCnoTotalByBno" resultType="int">
+	<![CDATA[
+		SELECT /* + INDEX(bcomment IDX_bcomment) */ count(*)
+		FROM AMB.bcomment
+		WHERE bno = #{ bCommentPagingDTO.bno}
+	]]>
+	</select>
+</mapper>

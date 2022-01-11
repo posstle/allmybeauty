@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spring.allmybeauty.product.sales.mapper.SalesMapper">
+	
+	<!--일별 매출 조회--> 
+	<select id="selectDayList" resultType="com.spring.allmybeauty.product.sales.domain.SalesVO">
+		<![CDATA[
+		SELECT to_char(orderdate, 'yyyy-mm-dd') as orderday, sum(ototalprice) as sales, count(*) as orderamount
+		FROM amb.orderdata
+		WHERE orderdate >= #{searchStartDate} and orderdate < to_char(#{searchEndDate})
+		GROUP BY to_char(orderdate, 'yyyy-mm-dd') ORDER BY 1
+		]]>
+	</select>
+	
+	<!--페이지 조회시 입출고 조회--> 
+	<select id="ProductInOutHistoryToday" resultType="com.spring.allmybeauty.product.sales.domain.ProductInOutVO">
+		<![CDATA[
+		SELECT iostatus, iodate, ioamount
+		FROM amb.product_io
+		WHERE iodate=sysdate and productid=#{productId}
+		]]>
+	</select>
+	
+	<!--입출고 조회--> 
+	<select id="ProductInOutHistory" resultType="com.spring.allmybeauty.product.sales.domain.ProductInOutVO">
+		<![CDATA[
+		SELECT iostatus, to_char(iodate, 'yyyy-mm-dd') as iodate, count(ioamount) as ioamount
+		FROM amb.product_io
+		WHERE iodate >= #{searchStartDate} and iodate < to_char(#{searchEndDate}) and iostatus=#{InOutType}
+		GROUP BY to_char(iodate, 'yyyy-mm-dd'), iostatus
+		order by iodate desc
+		]]>
+	</select>
+	
+	<!--일별 통계(건수가 없는 일도 표시)--><!-- 
+	<select id="selectDayList" resultType="com.spring.allmybeauty.product.sales.domain.SalesVO">
+		<![CDATA[
+		SELECT TO_CHAR(b.dt, 'YYYY-MM-DD') AS orderday, NVL(sum(sales), 0) as sales, NVL(SUM(a.orderamount), 0) as orderamount
+  		FROM (SELECT TO_CHAR(orderdate, 'YYYY-MM-DD') AS orderdate, sum(ototalprice) as sales, COUNT(*) orderamount
+           	  FROM AMB.orderdata
+              WHERE orderdate BETWEEN #{searchStartDate} AND #{searchEndDate} 
+          	  GROUP BY orderdate) a, 
+          	  		(SELECT #{searchStartDate} + LEVEL - 1 AS dt
+            		FROM dual 
+         			CONNECT BY LEVEL <= (#{searchEndDate} - #{searchStartDate} + 1)) b
+  		WHERE b.dt = a.orderdate(+)
+  		GROUP BY b.dt ORDER BY b.dt
+  		]]>
+	</select> -->
+	
+	<!--월별 매출 조회-->
+	<select id="selectMonthList" resultType="com.spring.allmybeauty.product.sales.domain.SalesVO">
+		<![CDATA[
+		SELECT to_char(orderdate, 'yyyy-mm') as ordermonth, sum(ototalprice) as sales, count(*) as orderamount
+		from amb.orderdata
+		where orderdate >= to_char(#{searchStartDate}, 'yyyy-mm-dd') and orderdate < to_char(#{searchEndDate}, 'yyyy-mm-dd')
+		group by to_char(orderdate, 'yyyy-mm') order by 1
+		]]>
+	</select>
+	
+	<!--월별 통계(건수가 없는 월도 표시)--><!--  
+	<select id="selectMonthList" resultType="com.spring.allmybeauty.product.sales.domain.SalesVO">
+		<![CDATA[
+		SELECT TO_CHAR(b.dt, 'YYYY-MM') AS ordermonth, NVL(sum(sales), 0) as sales, NVL(SUM(a.orderamount), 0) as orderamount
+  		FROM (SELECT TO_CHAR(orderdate, 'YYYY-MM') AS orderdate, sum(ototalprice) as sales, COUNT(*) orderamount
+           	  FROM AMB.orderdata
+              WHERE orderdate BETWEEN #{searchStartDate} AND #{searchEndDate} 
+          	  GROUP BY orderdate) a, 
+          	  		(SELECT #{searchStartDate} + LEVEL - 1 AS dt
+            		FROM dual 
+         			CONNECT BY LEVEL <= (#{searchEndDate} - #{searchStartDate} + 1)) b
+  		WHERE b.dt = a.orderdate(+)
+  		GROUP BY TO_CHAR(b.dt, 'YYYY-MM') ORDER BY to_char(b.dt, 'YYYY-mm')
+  		]]>
+	</select> -->
+	
+	
+	
+	<!--년별 매출 조회-->
+	<select id="selectYearList" resultType="com.spring.allmybeauty.product.sales.domain.SalesVO">
+		<![CDATA[
+		SELECT to_char(orderdate, 'yyyy') as orderyear , sum(ototalprice) as sales, count(*) as orderamount
+		from amb.orderdata
+		where orderdate >= #{searchStartDate} and orderdate < to_char(#{searchEndDate})
+		group by to_char(orderdate, 'yyyy') order by 1
+		]]>
+	</select>
+	
+	
+	<select id="selectTodayOrderCount" resultType="long">
+		<![CDATA[
+		select count(*) as todayOrderCount from orderdata where to_char(orderdate, 'yyyy/mm/dd')=to_char(sysdate, 'yyyy/mm/dd')
+		]]>
+	</select>
+	
+	<select id="selectTodayOrderIn" resultType="long">
+		<![CDATA[
+		select (case when todayProductInCount is null then 0 else todayProductInCount end) as todayProductInCount
+		from(select sum(ioamount) as todayProductInCount from product_io where to_char(iodate, 'yyyy/mm/dd')=to_char(sysdate, 'yyyy/mm/dd') and iostatus='입고')
+		]]>
+	</select>
+	
+	<select id="selectTodayOrderOut" resultType="long">
+		<![CDATA[
+		select (case when todayProductOutCount is null then 0 else todayProductOutCount end) as todayProductOutCount
+		from(select sum(ioamount) as todayProductOutCount from product_io where to_char(iodate, 'yyyy/mm/dd')=to_char(sysdate, 'yyyy/mm/dd') and iostatus='출고')
+		]]>
+	</select>
+	
+	<select id="selectTodayTotalPrice" resultType="long">
+		<![CDATA[
+		select (case when todaytotalprice is null then 0 else todaytotalprice end) as todaySalesTotalPrice
+		from (select sum(ototalprice) as todaytotalprice from orderdata where to_char(orderdate, 'yyyy/mm/dd')=to_char(sysdate, 'yyyy/mm/dd'))
+		]]>
+	</select>
+	
+	
+	
+</mapper>

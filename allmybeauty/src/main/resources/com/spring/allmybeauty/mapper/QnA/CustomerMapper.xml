@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.spring.allmybeauty.QnA.customer.mapper.CustomerBoardMapper">
+
+	<!--고객게시물 리스트  -->
+	<select id="selectCustomerBoardList" resultType="com.spring.allmybeauty.QnA.customer.domain.CustomerBoardVO" >
+	 <![CDATA[
+	 SELECT rn,
+	 		bno,
+	 		mid,
+	 		btitle,
+	 		bcontent,
+	 		bregdate,
+	 		bmoddate,
+	 		bviewcount,
+	 		breplycnt,
+	 		bdelflag
+ 	 FROM (
+		   SELECT /*+ INDEX_DESC (a PK_CUSTOMERBOARD_BNO) */ ROWNUM rn, a.*
+		   FROM AMB.customerboard a
+		   WHERE bdelflag = 0 and  ROWNUM <=  ( #{pagingNum} * #{rowAmountPerPage} ) 
+  		)
+	 WHERE rn >= ( ( #{pagingNum} * #{rowAmountPerPage} ) - ( #{rowAmountPerPage} - 1 ) )
+		]]>	
+	
+	
+	</select>
+	
+		<!--고객게시물 리스트  -->
+	<select id="selectDelCustomerBoardList" resultType="com.spring.allmybeauty.QnA.customer.domain.CustomerBoardVO" >
+	 <![CDATA[
+	 SELECT 
+	 		rn,
+	 		bno,
+	 		mid,
+	 		btitle,
+	 		bcontent,
+	 		bregdate,
+	 		bmoddate,
+	 		bviewcount,
+	 		breplycnt,
+	 		bdelflag
+ 	 FROM (
+		   SELECT /*+ INDEX_ASC (a PK_CUSTOMERBOARD_BNO) */ ROWNUM rn,a.*
+		   FROM AMB.customerboard a
+		   WHERE  bdelflag = 1 and ROWNUM <=  ( #{pagingNum} * #{rowAmountPerPage} ) 
+		)
+	 WHERE rn >= ( ( #{pagingNum} * #{rowAmountPerPage} ) - ( #{rowAmountPerPage} - 1 ) )
+		]]>	
+	
+	
+	</select>
+	
+	<!--고객 게시물 등록  -->
+	<insert id="insertCustomerBoard">
+		<selectKey keyProperty="bno" order="BEFORE" resultType="long">
+			SELECT AMB.SQ_CUSTOMERBOARD_BNO.nextval 
+			FROM dual
+		</selectKey>
+			INSERT INTO AMB.customerboard
+			VALUES(
+				#{bno}, 
+				#{mid}, 
+				#{btitle}, 
+				#{bcontent}, 
+				DEFAULT, 
+				DEFAULT, 
+				DEFAULT, 
+				DEFAULT, 
+				DEFAULT
+			)
+	</insert>
+
+	<!--게시물 상세  -->
+	<select id="selectCustomerBoard" resultType="com.spring.allmybeauty.QnA.customer.domain.CustomerBoardVO">
+		SELECT *		
+		FROM AMB.customerboard 
+		WHERE bno = #{bno} 
+	</select>
+	
+	<!--게시물 수정  -->
+	<update id="updateCustomerBoard">
+		UPDATE AMB.customerboard
+		SET btitle =  #{btitle},
+			bcontent = #{bcontent},
+			bmoddate = sysdate
+		WHERE bno = #{bno}
+	</update>
+	
+	<!-- 게시물 삭제요청 -->
+	<update id="updateCustomerBdelflag">
+	update AMB.customerboard
+	SET bdelFlag = 1
+	WHERE bno IN (
+		<foreach collection="array" item="bno" index="index" separator=",">
+			#{bno}
+		</foreach>
+		)
+	</update>
+	
+	<!-- 게시물 삭제 관리자 -->
+	<delete id="removeCustomerBoard"  >
+		DELETE AMB.customerboard 
+		WHERE bno IN (
+			<foreach collection="array" item="bno" index="index" separator=",">
+				#{bno}
+			</foreach>
+		)
+	</delete>
+	
+	
+	<!--조회수 증가  -->
+	<update id="updateCustomerBviewCnt"  >
+		UPDATE AMB.customerboard
+		SET bviewcount = bviewcount+1
+		WHERE bno = #{bno}
+	</update>
+	
+	<!-- 게시물 총개수 -->
+	<select id="selectTotalCustomer" resultType="long">
+	SELECT COUNT(*) totalCnt 
+	FROM AMB.customerboard
+	WHERE bdelflag = 0
+	</select>
+	
+	
+	<!-- 게시물 총개수 -->
+	<select id="selectTotalDelCustomer" resultType="long">
+	SELECT COUNT(*) totalCnt 
+	FROM AMB.customerboard
+	WHERE bdelflag = 1
+	</select>
+	
+	<!-- 게시물의 댓글 추가수  -->
+	<update id="updateReplyCnt">
+		UPDATE AMB.customerBoard
+		SET breplycnt = breplycnt + #{amount}
+		WHERE bno =#{bno} and bdelflag = 0
+	</update>
+</mapper>	
+

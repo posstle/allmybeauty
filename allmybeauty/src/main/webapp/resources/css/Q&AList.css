@@ -1,0 +1,56 @@
+@charset "UTF-8";
+
+#QnATable{
+	margin-top: 70px;
+	width:100%;
+	text-align: center;
+}
+#QnaSelectD{
+	border-bottom: 1px solid red;
+	margin-top : 100px;
+}
+#QnASelect{
+	list-style: none;
+    display: flex;
+    font-size: xx-large;
+    color: deeppink;
+    cursor: pointer;
+}
+
+.QnASelectL{
+	margin: auto;
+}
+
+#QnAH{
+	font-size: x-large;
+    color: black;
+}
+
+#QnABody{
+	font-size: 15px;
+    color: black;
+    cursor: pointer;
+}
+
+#QnAFin{
+	color: blue;
+    font-weight: bold;
+}
+
+#QnAWait{
+	color: red;
+	font-weight: 900;
+}
+
+.moveDetail{
+	border-top: 1px dotted #ccc;
+}
+
+.qnaDetails{
+	border-top: 1px dotted #ccc;
+}
+
+.QnADate{
+	margin-top: 20px;
+    margin-right: 20px
+}

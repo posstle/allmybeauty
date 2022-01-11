@@ -1,0 +1,19 @@
+@charset "UTF-8";
+
+.qboardList ul{
+			display: flex;
+			list-style: none;
+/* 			text-decoration: underline;
+			text-underline-position:under; */
+}
+
+.queans{
+	display: flex;
+}
+
+.queans .qbutton{
+	padding: 0px 10px 0px 10px;
+	float: right;
+}
+
+

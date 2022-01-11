@@ -1,0 +1,115 @@
+@charset "UTF-8";
+
+.main{
+    position: relative;
+}
+.queans > p{
+    font-size: 16px;
+}
+
+.queans .qbutton{
+    position: absolute;
+    font-size: 16px;
+    background: #9bce26 url(https://image.oliveyoung.co.kr/pc-static-root/image/comm/ico_inquiry.png) no-repeat 15px 50%;
+    right: 0;
+    padding: 0 25px 0 40px;
+    top: 53px;
+    border-radius: 20px;
+}
+
+.qboardul{
+    margin: 10px 0 0;
+    border-top: 1px solid gray;
+}
+
+#qboardList > ul{
+    list-style: none;
+    padding-left: 0;
+}
+
+.qboardC > li{
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.qboardC{
+    display:table-row;
+}
+
+.qlist{
+    display: table-cell;
+    width: 900px;
+    vertical-align: middle;
+}
+
+.qlistmid{
+    display: table-cell;
+    vertical-align: middle;
+    height: 75px;
+    width: 140px;
+    text-align: center;
+}
+
+.finans{
+	background: #9bce26;
+}
+
+.qrno{
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.qdate{
+    display: table-cell;
+    vertical-align: middle;
+    width: 70px;
+}
+
+.qconsp{
+	cursor: pointer;
+}
+
+.qlistmid > span{
+    display: block;
+}
+
+.qboardanswer{
+   background-color: #d3d3d3;
+   display: none;
+}
+    
+.qboardMidQcontent{
+   display:flex;
+}
+
+.qboardAdAnswer{
+   display:flex;
+   border-top: 1px solid black;
+   padding-bottom: 20px;
+}
+
+.qboardQcontents{
+   margin-top: 30px;
+    margin-left: 50px;
+    font-size: 20px;
+    color: red;
+}
+
+.qboardQcontent{
+   margin-top: 30px;
+    margin-left: 50px;
+    font-size: 20px;
+}
+
+.Answerboard{
+   margin-top: 30px;
+    margin-left: 50px;
+    font-size: 20px;
+    color: red;
+}
+
+.Answerboardp{
+   margin-top: 30px;
+    margin-left: 50px;
+    font-size: 20px;
+}
+

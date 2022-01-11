@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spring.allmybeauty.product.order.mapper.OrderDataMapper">
+	
+	<resultMap type="com.spring.allmybeauty.product.cart.domain.CartVO" id="cartMap">
+		<id property="mid" column="mid"/>
+		<id property="mName" column="mName"/>
+		<id property="productId" column="productId"/>
+		<id property="productName" column="productName"/>
+		<id property="productBrand" column="productBrand"/>
+		<id property="productPrice" column="productPrice"/>
+		<id property="uploadPath" column="uploadPath"/>
+		<id property="uuid" column="uuid"/>
+		<id property="fileName" column="fileName"/>
+		<id property="repoPath" column="repoPath"/>
+	</resultMap>
+	
+	<resultMap type="com.spring.allmybeauty.product.order.domain.OrderDataVO" id="orderDataMap">
+		<id property="mid" column="mid"/>
+		<id property="mName" column="mName"/>
+		<id property="mPhone" column="mPhone"/>
+		<id property="mPostalCode" column="mPostalCode"/>
+		<id property="mAddress" column="mAddress"/>
+		<id property="mDetailAddress" column="mDetailAddress"/>
+	</resultMap>
+	
+	<resultMap type="com.spring.allmybeauty.product.cart.domain.OrderVO" id="orderMap">
+		<collection property="cartVO" resultMap="cartMap"/>
+		<collection property="orderDataVO" resultMap="orderDataMap"/>
+	</resultMap>
+	
+	<!--주문자정보조회-->
+	<select id="orderData" resultType="com.spring.allmybeauty.product.order.domain.OrderDataVO">
+		SELECT mname, mphone, mpostalcode, maddress, mdetailaddress 
+		FROM amb.member 
+		WHERE mid=#{mid}
+	</select>
+	
+	<!--체크된상품 목록조회-->
+	<select id="selcetCartCheckList" resultType="com.spring.allmybeauty.product.cart.domain.CartVO">
+		SELECT rownum, cartid, p.productid, c.mid, mname, productname, cartamount, productprice, (productprice*cartamount) productpricesum, productbrand, cartcheck,
+             ( select uploadpath from attachfiles where p.productid=productid and filename like '%'||'ImageForList'||'%') as uploadpath,
+             ( select uuid from attachfiles where p.productid=productid and filename like '%'||'ImageForList'||'%') as uuid,
+             ( select filename from attachfiles where p.productid=productid and filename like '%'||'ImageForList'||'%') as filename
+		FROM amb.member m, amb.cart c, amb.product p
+		WHERE c.mid=m.mid and c.productid=p.productid and c.mid= #{mid} and cartcheck = 0 ORDER BY 1
+	</select>
+	
+	<!--즉시주문상품 조회-->
+	<select id="selectOrder" resultMap="orderMap">
+		SELECT p.productid, mdetailaddress,maddress,mpostalcode, mphone, mid, mname, productname,productprice, productbrand,
+             ( select uploadpath from attachfiles where p.productid=productid and filename like '%'||'ImageForList'||'%') as uploadpath,
+             ( select uuid from attachfiles where p.productid=productid and filename like '%'||'ImageForList'||'%') as uuid,
+             ( select filename from attachfiles where p.productid=productid and filename like '%'||'ImageForList'||'%') as filename
+		FROM amb.member m,amb.product p
+		WHERE #{mid}=m.mid and #{productId}=p.productid ORDER BY 1
+	</select>
+	
+	<!--체크된상품 총 금액-->
+	<select id="checkTotalPrice" resultType="int">
+		SELECT NVL(sum(productprice*cartamount),0)
+		FROM amb.cart c, amb.product p
+		WHERE c.productid=p.productid and mid=#{mid} and cartcheck = 0
+	</select>
+	
+	<!--주문정보입력-->
+	<insert id="orderDataInsert">
+		INSERT INTO amb.orderdata (orderno, mid, orderaddress, orderphone, ordername, orderrequirement, oTotalPrice, orderdate, opostalcode, oaddress, odetailaddress,orderpoint)
+		values (sq_orderdata_orderno.nextval, #{mid}, #{orderAddress}, #{orderPhone} , #{orderName}, #{orderRequirement}, #{oTotalPrice}, DEFAULT, #{oPostalCode}, #{oAddress}, #{oDetailAddress}, #{orderPoint})
+	</insert>
+	
+	<!--구매상품상세입력-->
+	<insert id="orderDetailInsert">
+		INSERT INTO amb.orderdetail (orderno, mid, productid, orderamount, productamount)
+		VALUES ((SELECT MAX(orderno) 
+				FROM amb.orderdata 
+				WHERE mid = #{mid}), #{mid}, #{productId}, #{cartAmount},#{productAmount})
+	</insert>
+	
+	<!--주문정보조회-->
+	<select id="orderDataList" resultType="com.spring.allmybeauty.product.order.domain.OrderDataVO">
+		SELECT o.orderno, orderdate ,productname, orderamount, productprice , (productprice*orderamount) productpricesum , ototalprice, opostalcode, oaddress, odetailaddress, orderrequirement, orderpoint
+		from amb.orderdata o, amb.orderdetail od, amb.product p
+		where o.orderno = (SELECT MAX(orderno) FROM amb.orderdata WHERE mid = #{mid}) 
+                    	   and o.orderno=od.orderno and o.mid= #{mid} and p.productid=od.productid ORDER BY 1
+	</select>
+	
+	<!--최신주문번호-->
+	<select id="orderno" resultType="int">
+		SELECT MAX(orderno)
+		FROM amb.orderdata
+	</select>
+	
+	<!--내최신주문번호-->
+	<select id="myOrderno" resultType="int">
+		SELECT MAX(orderno)
+		FROM amb.orderdata
+		WHERE mid = #{mid}
+	</select>
+	
+	<!-- 주문상품갯수 -->
+	<select id="count" resultType="int">
+		SELECT count(*)
+		FROM amb.orderdetail
+		WHERE mid = #{mid} and 
+			  orderno = (SELECT MAX(orderno) FROM amb.orderdata WHERE mid = #{mid})
+	</select>
+	
+	<!--결제 취소/실패시 주문데이터 삭제-->
+	<delete id="orderDelete">
+	DELETE FROM amb.ORDERDATA
+	WHERE orderno = (SELECT MAX(orderno) FROM amb.orderdata WHERE mid = #{mid})
+	</delete>
+	
+	<!--결제 성공시 재고 감소-->
+	<update id="productStockMinus">
+		UPDATE amb.product
+		SET productstock = productstock-#{orderAmount}
+		WHERE productid = #{productId}	
+	</update>
+	
+	<!--결제 성공시 출고-->
+	<insert id="productOut">
+		INSERT INTO amb.product_io (iono, productid, orderno, mid, iostatus, iodate, ioamount)
+		values (sq_product_io_iono.nextval, #{productId}, #{orderNo} , #{mid}, '출고', DEFAULT, #{orderAmount})
+	</insert>
+	
+	<!-- 주문상품 상세조회 -->
+	<select id="selectOrderDetail" resultType="com.spring.allmybeauty.product.order.domain.OrderDataVO">
+		SELECT * FROM amb.orderdetail
+		WHERE mid = #{mid} and 
+      				orderno = (SELECT MAX(orderno) FROM amb.orderdata WHERE mid = #{mid})
+	</select>
+	
+	<!--주문성공시 포인트 적립-->
+	<update id="pointPlus">
+		UPDATE amb.member
+		SET point = point + #{oTotalPrice}*0.05
+		WHERE mid = #{mid}
+	</update>
+	
+	<!--포인트 사용 주문성공시-->
+	<update id="pointMinus">
+		UPDATE amb.member
+		SET point = point - #{orderPoint}
+		WHERE mid = #{mid}
+	</update>
+	
+	<!--주문정보 개별조회-->
+	<select id="selectOrderData" resultType="com.spring.allmybeauty.product.order.domain.OrderDataVO">
+		SELECT * FROM amb.orderdata
+		WHERE mid = #{mid} and orderno =(SELECT MAX(orderno) FROM amb.orderdata WHERE mid = #{mid})
+	</select>
+	
+	<!--포인트 조회-->
+	<select id="selectPoint" resultType="int">
+		SELECT point
+		FROM amb.member
+		WHERE mid = #{mid}
+	</select>
+	
+	<!--재고 조회-->
+	<select id="selectStock" resultType="int">
+		SELECT productstock
+		FROM amb.product
+		WHERE productid = #{productId}
+	</select>
+</mapper>

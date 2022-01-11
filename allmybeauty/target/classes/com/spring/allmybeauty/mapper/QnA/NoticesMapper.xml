@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.spring.allmybeauty.QnA.notices.mapper.NoticesBoardMapper">
+	<!--Notices게시물 리스트  -->
+	<select id="selectNoticesBoardList" resultType="com.spring.allmybeauty.QnA.notices.domain.NoticesBoardVO" >
+
+	<![CDATA[
+	SELECT  
+			rn,
+			bno,
+			mid,
+			btitle,
+			bcontent,
+			bregdate,
+			bmoddate
+ 	 FROM (
+		   SELECT /*+ INDEX_DESC (a PK_noticeBoard_BNO) */ ROWNUM rn, a.*
+           FROM AMB.noticeBoard a
+           WHERE ROWNUM <=  ( #{pagingNum} * #{rowAmountPerPage} ) 
+		)
+	 WHERE rn >= ( ( #{pagingNum} * #{rowAmountPerPage} ) - ( #{rowAmountPerPage} - 1 ) )	
+	 ORDER BY bmoddate DESC
+	 ]]>	
+		
+	</select>
+	
+	<!--Notices 게시물 등록  -->
+	<insert id="insertNoticesBoard">
+		<selectKey keyProperty="bno" order="BEFORE" resultType="long">
+			SELECT AMB.SQ_NOTICEBOARD_BNO.nextval 
+			FROM dual
+		</selectKey>
+			INSERT INTO AMB.noticeBoard 
+			VALUES(
+					#{bno},
+					#{mid},
+					#{btitle},
+					#{bcontent},
+					DEFAULT,
+					DEFAULT
+				)
+	</insert>
+
+	<!--Notices게시물 상세  -->
+	<select id="selectNoticesBoard" resultType="com.spring.allmybeauty.QnA.notices.domain.NoticesBoardVO">
+		SELECT *		
+		FROM AMB.noticeBoard 
+		WHERE bno = #{bno}
+
+	</select>
+	
+	<!--Notices 게시물 수정  -->
+	<update id="updateNoticesBoard">
+		UPDATE AMB.noticeBoard
+		SET btitle =  #{btitle},
+			bcontent = #{bcontent},
+			bmoddate = sysdate
+		WHERE bno =#{bno}
+	</update>
+
+	<!--  Notices 게시물 삭제 관리자 -->
+	<delete id="deleteNoticesBoard">
+		DELETE AMB.noticeBoard 
+		WHERE bno IN (
+			<foreach collection="array" item="bno" index="index" separator=",">
+				#{bno}
+			</foreach>
+		)
+	</delete>
+	
+	<!-- 게시물 총개수 -->
+	<select id="selectTotalNotices" resultType="long">
+	SELECT COUNT(*) totalCnt 
+	FROM AMB.noticeBoard
+	</select>
+	
+	
+</mapper>

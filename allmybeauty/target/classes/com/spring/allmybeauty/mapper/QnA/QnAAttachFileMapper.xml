@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.spring.allmybeauty.QnA.common.upload.mapper.QnAAttachFileMapper">
+
+<!-- 첨부파일 추가  -->
+<insert id="insertAttachFile">
+	INSERT INTO AMB.qnaattachfile 
+	VALUES ( 
+			#{uuid},
+			#{boardtype},
+			#{nbno},
+			#{cbno},
+			#{filename},
+			#{uploadpath}
+		)
+</insert>
+
+
+<!-- 고객문의 특정 게시물 조회 -->
+<select id="selectAttachFilesByCBno" resultType="com.spring.allmybeauty.QnA.common.upload.domain.QnAAttachFileVO">
+	SELECT 
+			uuid,
+	 		boardtype,
+	 		nbno,
+	 		cbno,
+	 		filename,
+	 		uploadpath
+	FROM AMB.qnaattachfile
+	WHERE cbno =#{cbno}
+</select>
+
+
+<!-- 공지사항 특정 게시물 조회 -->
+<select id="selectAttachFilesByNBno" resultType="com.spring.allmybeauty.QnA.common.upload.domain.QnAAttachFileVO">
+	SELECT 
+			uuid,
+			boardtype,
+			nbno,
+			cbno,
+			filename,
+			uploadpath
+	FROM AMB.qnaattachfile
+	WHERE nbno =#{nbno}
+</select>
+
+<!-- 특정 첨부파일 삭제 -->
+<delete id="deleteAttachFile">
+ 	DELETE FROM AMB.qnaattachfile 
+ 	WHERE uuid = #{uuid}
+</delete>
+
+	
+<!--공지사항 특정게시물의 모든 첨부파일 전체 삭제 -->
+<delete id="delAttachFilesByNBno">
+	DELETE FROM AMB.qnaattachfile 
+	WHERE nbno IN	(
+			<foreach collection="array" item="nbno" index="index" separator=",">
+				#{nbno}
+			</foreach>
+		)
+</delete>
+
+<!--공지사항 특정게시물의 모든 첨부파일 전체 삭제 -->
+<delete id="delAttachFileByCBno">
+	DELETE FROM AMB.qnaattachfile 
+	WHERE cbno = #{cbno}
+</delete>
+
+<!--공지사항 특정게시물의 모든 첨부파일 전체 삭제 -->
+<delete id="delAttachFilesByCBno"  parameterType="java.util.ArrayList">
+	DELETE FROM AMB.qnaattachfile 
+	WHERE cbno IN	(
+			<foreach collection="array" item="cbno" index="index" separator=",">
+				#{cbno}
+			</foreach>
+		)
+</delete>
+
+
+</mapper>
+

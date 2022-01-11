@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.spring.allmybeauty.product.detail.mapper.ReviewMapper">
+
+	<!-- 리뷰 목록 조회 -->
+	<select id="selectReviewList" resultType="com.spring.allmybeauty.product.detail.domain.ReviewVO">
+		select rev.rno, rev.productid, rev.mid, rev.rcontent, rev.rfilename, rev.rdate, rev.prno, lvl, mem.mskintype
+		from (select rownum rn, b.*
+			from (select level lvl, a.*
+				from (select /*+ INDEX_ASC(a idx_review_productid_rno)*/ * from review 
+					where productid = #{reviewPagingDTO.productid}
+					)a
+					start with prno is null
+					connect by prior rno = prno
+					order siblings by rdate desc
+					)b
+				)rev, member mem where rev.mid = mem.mid and rn between #{reviewPagingDTO.pageNum} * #{reviewPagingDTO.rowAmountPerPage}
+				  		- (#{reviewPagingDTO.rowAmountPerPage} - 1)
+				  and #{reviewPagingDTO.pageNum} * #{reviewPagingDTO.rowAmountPerPage}
+	</select>
+	
+	<!-- 댓글 총 개수확인 -->
+	<select id="selectReplyTotal" resultType="long">
+		select /*+ INDEX(review idx_review_productid_rno) */ count(*)
+		from review
+		where productid = #{reviewPagingDTO.productid}
+	</select>
+	
+	<!-- 리뷰 등록 -->
+	<insert id="insertReview">
+		<selectKey keyProperty="rno" order="BEFORE" resultType="long">
+			select sq_review_rno.nextval from dual
+		</selectKey>
+		insert into review(rno, productid, mid, rcontent, rfilename, rdate, prno)
+		values(#{rno}, #{productid}, #{mid}, #{rcontent}, default, default, default)
+	</insert>
+	
+	<!-- 리뷰에 대한 답글 등록 -->
+	<insert id="insertReviewReply">
+		<selectKey keyProperty="rno" order="BEFORE" resultType="long">
+			select sq_review_rno.nextval from dual
+		</selectKey>
+		insert into review(rno, productid, mid, rcontent, rfilename, rdate, prno)
+		values(#{rno}, #{productid}, #{mid}, #{rcontent}, default, default, #{prno})
+	</insert>
+
+	<!-- 특정 댓글/답글 조회 -->
+		<select id="selectReview" resultType="com.spring.allmybeauty.product.detail.domain.ReviewVO">
+			select * from review where productid = #{productid} and rno = #{rno}
+		</select>
+	<!-- 리뷰 수정 -->
+	<update id="upadateReview">
+		update review
+		set rcontent = #{rcontent} where productid = #{productid} and mid = #{mid} and rno = #{rno}
+	</update>
+
+	<!-- 후기 삭제 -->
+	<delete id="deleteReview">
+		delete from review where productid = #{productid} and rno = #{rno}
+	</delete>
+	
+</mapper>	

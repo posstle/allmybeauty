@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+		
+		
+		<!-- 방법1: jdbc정보를 직접 설정 -->
+		<!-- 1. jdbc 설정 정보가 설정된 HikariConfig 빈 생성 -->
+		<bean id="hikariConfig" class="com.zaxxer.hikari.HikariConfig">
+			<!-- 운영시 -->
+		<!-- 	
+			<property name="driverClassName" value="oracle.jdbc.OracleDriver"></property>
+			<property name="jdbcUrl" value="jdbc:oracle:thin:@localhost:1521:orcl"></property>
+			<property name="username" value="AMB"></property>
+			<property name="password" value="oracle4U"></property> -->
+			<!-- 개발시 -->
+			<property name="driverClassName" value="net.sf.log4jdbc.sql.jdbcapi.DriverSpy"></property>
+			<property name="jdbcUrl" value="jdbc:log4jdbc:oracle:thin:@172.16.5.2:1521:orcl"></property>
+			<property name="username" value="AMB"></property>
+			<property name="password" value="oracle4U"></property> 
+		</bean>
+		
+		<!-- 2.HikariDataSource 클래스를 이용한 dataSource 빈 생성: JDBC설정이 저장된 HikariConfig 빈 주입받음. -->
+		<bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
+			<!-- 생성자를 이용한 주입방식 -->
+			<constructor-arg ref="hikariConfig"/>
+		</bean>
+		
+		<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+			<property name="dataSource" ref="dataSource"></property>
+			<property name="configLocation" value="classpath:mapper/MybatisConfig.xml"></property>
+			<property name="mapperLocations">
+				<list>
+					<!-- 상품관련 -->
+					<value>classpath:com/spring/allmybeauty/mapper/product/ProductMapper.xml</value>
+					<value>classpath:com/spring/allmybeauty/mapper/product/ProdCompMapper.xml</value>
+					<value>classpath:com/spring/allmybeauty/mapper/product/ProductAttachFile.xml</value>
+					<value>classpath:com/spring/allmybeauty/mapper/product/ProductInOutMapper.xml</value>
+					<value>classpath:com/spring/allmybeauty/mapper/sales/SalesMapper.xml</value>
+					<!-- 회원 관련 -->
+					<value>classpath:com/spring/allmybeauty/mapper/member/MemberMapper.xml</value>
+					<value>classpath:com/spring/allmybeauty/mapper/member/MyPageMapper.xml</value>
+					<value>classpath:com/spring/allmybeauty/mapper/member/AdminMemberMapper.xml</value>
+					<!-- 장바구니 -->
+					<value>classpath:com/spring/allmybeauty/mapper/cart/CartMapper.xml</value>
+					<!-- 주문관련 -->
+					<value>classpath:com/spring/allmybeauty/mapper/order/OrderDataMapper.xml</value>
+					<!-- 상품상세페이지 관련 -->
+					<value>classpath:com/spring/allmybeauty/mapper/detail/MyDetail.xml</value>
+					<value>classpath:com/spring/allmybeauty/mapper/detail/Qboard.xml</value>
+					<value>classpath:com/spring/allmybeauty/mapper/detail/Review.xml</value>
+					<!-- QnA보드 관련 -->
+					<value>classpath:com/spring/allmybeauty/mapper/QnA/CustomerMapper.xml</value>
+					<value>classpath:com/spring/allmybeauty/mapper/QnA/NoticesMapper.xml</value>
+					<value>classpath:com/spring/allmybeauty/mapper/QnA/QnAAttachFileMapper.xml</value>
+					<value>classpath:com/spring/allmybeauty/mapper/QnA/BCommentMapper.xml</value>
+				</list>
+			</property>
+		</bean>
+		
+		<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+			<constructor-arg index="0" ref="sqlSessionFactory"/>
+		</bean>
+		
+		<!-- naver Email설정 -->
+	    <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl"> 
+		     <property name="host" value="smtp.naver.com"/> <!-- 메일서버 호스트 -->
+		     <property name="port" value="587"/> <!-- 메일서버 포트번호 -->
+		     <property name="username" value="goljw0520@naver.com"/> <!-- 자신의 이메일 아이디 -->
+		     <property name="password" value="goott1234@"/> <!-- 자신의 비밀번호 -->
+		       <!-- 보안연결 SSL과 관련된 설정 -->
+		     <property name="javaMailProperties">
+		      <props>
+			      <prop key="mail.smtp.auth">true</prop>
+			      <prop key="mail.smtp.starttls.enable">true</prop>
+			      <prop key="mail.smtps.checkserveridentity">true</prop>
+			      <prop key="mail.smtps.ssl.trust">*</prop>
+			      <prop key="mail.debug">true</prop>
+			      <prop key="mail.smtp.socketFactory.class">javax.net.ssl.SSLSocketFactory</prop>
+			      
+			      <!-- Could not convert socket to TLS; 오류 해결 위한 코드 -->
+			      <prop key="mail.smtp.ssl.trust">smtp.naver.com.com</prop>
+			      <prop key="mail.smtp.ssl.protocols">TLSv1.2</prop>
+		      
+		      </props>
+		     </property>
+	    </bean>
+		
+		<!-- 매퍼 인터페이스가 있는 패키지의 명을 명시해주어야함. -->
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.common.fileupload.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.member.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.member.admin.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.mypage.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.product.cart.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.product.list.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.product.detail.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.product.order.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.product.register.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.product.sales.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.QnA.common.upload.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.QnA.common.comment.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.QnA.customer.mapper"/>
+		<mybatis-spring:scan base-package="com.spring.allmybeauty.QnA.notices.mapper"/>
+		
+		
+		<!-- 스프링 트랜잭션 기능 활성화 -->
+		<tx:annotation-driven/>
+		
+		<!-- 트랜잭션 관리자 빈(dataSource빈을 주입받음) -->
+		<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+			<property name="dataSource" ref="dataSource"></property>	  
+		</bean>
+
+</beans>

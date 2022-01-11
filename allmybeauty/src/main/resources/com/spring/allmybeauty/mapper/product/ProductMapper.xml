@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.spring.allmybeauty.product.list.mapper.ProductMapper">
+	
+	<resultMap type="com.spring.allmybeauty.product.list.domain.ProductVO" id="ProductMap">
+		<id property="productId" column="productId"/>
+		<id property="productName" column="productName"/>
+		<id property="productPrice" column="productPrice"/>
+		<id property="productCategory" column="productCategory"/>
+		<id property="productSubCategory" column="productSubCategory"/>
+		<id property="productBrand" column="productBrand"/>
+		<id property="productDesc" column="productDesc"/>
+		<id property="productStock" column="productStock"/>
+		<id property="productThumb" column="productThumb"/>
+		<id property="skintypeid" column="skintypeid"/>
+		<id property="thumbflag" column="thumbflag"/>
+	</resultMap>
+	
+	<resultMap type="com.spring.allmybeauty.common.fileupload.domain.AttachfilesVO" id="AttachFileMap">
+		<id property="uuid" column="uuid"/>
+		<id property="uploadpath" column="uploadpath"/>
+		<id property="filename" column="filename"/>
+		<id property="productid" column="productid"/>
+	</resultMap>
+	
+	<resultMap type="com.spring.allmybeauty.product.list.domain.ProductAttachfileMapVO" id="ProductAttachfileMap">
+		<collection property="productVO" resultMap="ProductMap"/>
+		<collection property="attachfilesVO" resultMap="AttachFileMap"/>
+	</resultMap>
+	
+	<!-- 페이징 고려 -->
+	<select id="SelectProductList" resultMap="ProductAttachfileMap">
+		<![CDATA[
+		select productid, productname, productprice, productcategory, productsubcategory, productbrand, productstock, 
+				(case when productthumb is null then 0 else productthumb end) as productthumb, 
+				(case when skintypeid is null then 0 else skintypeid end) skintypeid,
+				(case when uploadpath is null then 'no image' else uploadpath end) uploadpath,
+				(case when uuid is null then 'no image' else uuid end) uuid,
+				(case when filename is null then 'no image' else filename end) filename
+		]]>
+		<if test='mid!=null and !mid.equals("")'>
+				,(case when thumbflag is null then 0 else thumbflag end) thumbflag
+		</if>
+		<![CDATA[
+		from (select rownum rn, b.*
+			  from (select 
+      	]]>
+      	<choose>
+      		<when test='sortBy==null or sortBy.equals("")'>/*+ index_desc (p pk_product_productid) */ </when>
+	      	<when test='sortBy.equals("sortprice")'>/*+ index_desc (p sort_price) */ </when>
+	      	<when test='sortBy.equals("sortlowprice")'>/*+ index_asc (p sort_price) */ </when>
+      	</choose>
+      	<![CDATA[
+      				p.*,(select skintypeid from AMB.skintype_map where p.productid=productid) as skintypeid, 
+      				(select count(*) from AMB.thumb where p.productid=productid group by productid) as productthumb,
+      				(select uploadpath from attachfiles where p.productid=productid and filename like '%'||'ImageForList'||'%') as uploadpath,
+      				(select uuid from attachfiles where p.productid=productid and filename like '%'||'ImageForList'||'%') as uuid,
+              		(select filename from attachfiles where p.productid=productid and filename like '%'||'ImageForList'||'%') as filename
+      	]]>
+      		<if test='mid!=null and !mid.equals("")'>
+      				,(select count(mid) from AMB.thumb where p.productid=productid and mid=#{mid} group by mid) thumbflag
+      		</if>
+      	<![CDATA[
+      				from AMB.product p
+     	]]>
+     		<where>
+     			<![CDATA[
+     			productdelflag=#{delflag}
+     			]]>
+     			<if test='skintype!=null and !skintype.equals("")'>
+					and (select skintypeid from AMB.skintype_map where p.productid=productid)=#{skintype}
+	    		</if>
+	    		<if test='category!=null and !category.equals("")'>
+	    			and productcategory=#{category}
+	    		</if>
+	    		<if test='subCategory!=null and !subCategory.equals("")'>
+	    			and productsubcategory=#{subCategory}
+	    		</if>
+	    		<if test='keyword!=null and !keyword.equals("")'>
+					and productbrand like '%'||#{keyword}||'%' or productname like '%'||#{keyword}||'%'
+	    		</if>
+     		</where>
+     		<if test='sortBy!=null and !sortBy.equals("")'>
+     			<if test='sortBy.equals("sortthumb")'>
+     				order by productthumb desc nulls last
+     			</if>
+     		</if>
+     	<![CDATA[ 
+     		  		) b
+     		  	where rownum <= (#{pageNum} * #{rowAmountPerPage})
+      		  )
+      	where rn >= ((#{pageNum} * #{rowAmountPerPage}) - (#{rowAmountPerPage}-1))
+      	]]>
+	</select>
+	
+	<select id="selectRowAmountTotal" resultType="long">
+		select count(*) totalCnt from (select p.*,(select skintypeid from AMB.skintype_map where p.productid=productid) as skintypeid, 
+      											  (select count(*) from AMB.thumb where p.productid=productid group by productid) as productthumb
+      								  from AMB.product p where productdelflag=#{delflag})
+		<where>
+			<if test='skintype!=null and !skintype.equals("")'>
+				skintypeid=#{skintype}
+			</if>
+			<if test='category!=null and !category.equals("")'>
+    			and productcategory=#{category}
+	   		</if>
+	   		<if test='subCategory!=null and !subCategory.equals("")'>
+    			and productsubcategory=#{subCategory}
+    		</if>
+			<if test='keyword!=null and !keyword.equals("")'>
+				and productbrand like '%'||#{keyword}||'%' or productname like '%'||#{keyword}||'%'
+	    	</if>
+		</where>
+	</select>
+	
+	<select id="selectComponentList" resultType="com.spring.allmybeauty.product.register.domain.ComponentVO">
+		select * from AMB.component
+	</select>
+	
+	<select id="SelectProductInfoForModify" resultType="com.spring.allmybeauty.product.list.domain.ProductVO">
+		select p.*, s.skintypeid
+		from product p inner join skintype_map s on (p.productid=s.productid)
+		where p.productid=#{productId}
+	</select>
+	
+	<select id="selectComponentListForModify" resultType="com.spring.allmybeauty.product.modify.domain.ComponentVO">
+		select c.*, (case when p.productid is null then 0 else p.productid end) as productid 
+		from component c inner join (select * from prod_comp_map where productid=#{productId}) p on (c.comno=p.comno)
+	</select>
+	
+	<!-- 수정 시 재고현황 체크 -->
+	<select id="selectProductStockByProductId" resultType="Integer">
+		select productstock from product where productid=#{productId}
+	</select>
+	
+	<insert id="insertProduct">
+		<selectKey keyProperty="productId" order="BEFORE" resultType="long">
+			select AMB.sq_product_productid.nextval from dual
+		</selectKey>
+		insert into AMB.PRODUCT
+		values(#{productId}, #{productName}, #{productPrice}, #{productCategory}, #{productSubCategory}, #{productDesc}, #{productBrand}, #{productStock}, default)
+	</insert>
+	
+	<update id="updateProduct">
+		update product
+		set productname=#{productName},
+			productprice=#{productPrice},
+			productcategory=#{productCategory},
+			productsubcategory=#{productSubCategory},
+			productdesc=#{productDesc},
+			productbrand=#{productBrand},
+			productstock=productstock+#{productStock}
+		where productid=#{productId}
+	</update>
+	
+	<update id="updateSkinTypeMap">
+		update skintype_map
+		set skintypeid=#{skintypeid}
+		where productid=#{productId}
+	</update>
+	
+	<delete id="deleteProdCompMapByProductId">
+		delete from prod_comp_map where productid=#{productId}
+	</delete>
+	
+	<update id="deleteProduct">
+		update AMB.PRODUCT
+		set PRODUCTDELFLAG = 1
+		WHERE productid in (
+			<foreach collection="array" item="productIdList" index="index" separator=",">
+				#{productIdList}
+			</foreach>
+		)
+	</update>
+	
+	<insert id="insertSkinTypeMap">
+		insert into AMB.SKINTYPE_MAP
+		values(#{productId}, #{skintypeid})
+	</insert>
+	
+	<insert id="plusThumbCount">
+		<selectKey keyProperty="thumbId" order="BEFORE" resultType="long">
+			select AMB.sq_thumb_thumbid.nextval from dual
+		</selectKey>
+		<if test='mid!=null and !mid.equals("")'>
+			insert into AMB.thumb
+			values(#{thumbId}, #{mid}, #{productId})
+		</if>
+	</insert>
+	
+	<delete id="minusThumbCount">
+		delete from AMB.thumb
+		where mid=#{mid} and productid=#{productId}
+	</delete>
+	
+	<select id="memberThumb" resultType="int">
+      select count(*) from thumb where productid = #{productId} and mid = #{mid}
+   </select>
+	
+	<!-- 성분검색 -->
+   <select id="searchComponent" resultType="com.spring.allmybeauty.product.register.domain.ComponentVO">
+      select * from AMB.component WHERE comname LIKE '%'||#{keyword}||'%'
+   </select>
+	
+</mapper>

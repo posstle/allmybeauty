@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spring.allmybeauty.product.cart.mapper.CartMapper">
+	
+	<!--장바구니 조회-->
+	<select id="selcetCartList" resultType="com.spring.allmybeauty.product.cart.domain.CartVO">
+		SELECT cartid, p.productid, c.mid, mname, productname, cartamount, productprice, (productprice*cartamount) productpricesum, rownum, productbrand, cartcheck,
+             ( select uploadpath from attachfiles where p.productid=productid and filename like '%'||'ImageForList'||'%') as uploadpath,
+             ( select uuid from attachfiles where p.productid=productid and filename like '%'||'ImageForList'||'%') as uuid,
+             ( select filename from attachfiles where p.productid=productid and filename like '%'||'ImageForList'||'%') as filename
+		FROM amb.member m, amb.cart c, amb.product p
+		WHERE m.mid=c.mid and c.productid=p.productid and c.mid= #{mid} ORDER BY 1
+	</select>
+	
+	<!--장바구니 담기-->
+	<insert id="insertCart">
+		<selectKey keyProperty="cartId" order="BEFORE" resultType="long">
+			select AMB.SQ_CART_CARTID.nextval from dual
+		</selectKey>
+		INSERT INTO amb.cart 
+		values (#{cartId}, #{mid}, #{productId}, #{cartAmount}, default)
+	</insert>
+	
+	<!--장바구니 개별삭제-->
+	<delete id="deleteCart">
+		DELETE FROM amb.cart 
+		WHERE cartid = #{cartid}
+	</delete>
+	
+	<!--장바구니 비우기-->
+	<delete id="deleteCartAll">
+		DELETE FROM amb.cart 
+		WHERE mid = #{mid, jdbcType=VARCHAR}
+	</delete>
+	
+	<!--장바구니 총 금액-->
+	<select id="totalPrice" resultType="int">
+		SELECT NVL(sum(productprice*cartamount),0)
+		FROM amb.cart c, amb.product p
+		WHERE c.productid=p.productid and mid=#{mid}
+	</select>
+	
+	<!--장바구니 수량 1 증가-->
+	<update id="cartAmountPlus">
+		UPDATE amb.cart
+		SET cartAmount = cartAmount + 1
+		WHERE cartId = #{cartId}	
+	</update>
+	
+	<!--장바구니 수량 1 감소-->
+	<update id="cartAmountMinus">
+		UPDATE amb.cart
+		SET cartAmount = cartAmount-1
+		WHERE cartId = #{cartId}	
+	</update>
+	
+	<!--장바구니 체크-->
+	<update id="cartCheck">
+		UPDATE amb.cart
+		SET cartcheck = 0
+		WHERE cartId = #{cartId}	
+	</update>
+	
+	<!--장바구니 체크안함-->
+	<update id="cartUnCheck">
+		UPDATE amb.cart
+		SET cartcheck = 1
+		WHERE cartId = #{cartId}	
+	</update>
+	
+	<!-- 장바구니에 이미 담겨있는지 확인 -->
+	<select id="selectExistCart" resultType="Integer">
+		select cartid from amb.cart where mid=#{mid} and productid=#{productId}
+	</select>
+	
+	<!--좋아요 조회-->
+	<select id="thumbList" resultType="com.spring.allmybeauty.product.list.domain.ProductVO">
+		SELECT productId ,(case when productthumb is null then 0 else productthumb end) as productthumb
+                 		 ,(case when thumbflag is null then 0 else thumbflag end) thumbflag
+		FROM (SELECT p.*,(select count(*) from AMB.thumb where p.productid=productid group by productid) as productthumb,
+                 (select count(mid) from AMB.thumb where p.productid=productid and mid=#{mid} group by mid) thumbflag
+                 FROM amb.product p)
+		WHERE productId > 0
+		ORDER BY productId asc
+	</select>
+	
+	<!--thumbflag 조회-->
+	<select id="thumbflag" resultType="int">
+		SELECT (case when thumbflag is null then 0 else thumbflag end) thumbflag
+		FROM (SELECT p.*,(select count(mid) from AMB.thumb where p.productid=productid and mid=#{mid} group by mid) thumbflag
+              FROM amb.product p)
+		WHERE productid = #{productId}
+	</select>
+	
+</mapper>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.spring.allmybeauty.product.detail.mapper.QboardMapper">
+	
+	<select id="ListQboard" resultType="com.spring.allmybeauty.product.detail.domain.QboardVO">
+<!-- 			select qno, productid, mid, qcontent, qanswerno, qdate, qrno, lvl
+			from(select rownum rn, b.*
+				from (select level lvl, a.*
+  					from (select * from qboard)a where productid = #{productid} and not mid = 'admin'
+  							start with qrno is null
+							connect by prior qno = qrno
+							order siblings by qdate desc)b where rownum <= #{pageNum} * #{rowAmountPerPage} )
+							where rn >= ( ( #{pageNum} * #{rowAmountPerPage} ) - (#{rowAmountPerPage} - 1 ) ) -->
+		
+		<![CDATA[					
+			select qno, productid, mid, qcontent, qanswerno, qdate, qrno
+			from(select rownum rn, b.*
+				from (select a.*
+  					from (select * from qboard)a where productid = #{productid}  and not mid = 'admin'
+							order by qdate desc)b where rownum <= #{pageNum} * #{rowAmountPerPage} )
+							where rn >= ( ( #{pageNum} * #{rowAmountPerPage} ) - (#{rowAmountPerPage} - 1 ) )
+		]]>						
+	</select>
+	
+	<!--총 개수 확인 -->
+	<select id="selectQboardTotal" resultType="int">
+		select count(*)
+		from qboard
+		where productid = #{productid} and not mid = 'admin'
+	</select> 
+	
+	<!-- Q&A 문의 작성 -->
+	<insert id="insertQboard">
+		<selectKey keyProperty="qno" order="BEFORE" resultType="int">
+			select sq_qboard_qno.nextval from dual
+		</selectKey>
+			insert into qboard values(#{qno}, #{productid}, #{mid}, #{qcontent}, 0, default,  default)
+	</insert>
+	
+	<!-- Q&A 문의 삭제 -->
+	<!-- on delete cascade로 관리자 답변까지 삭제 구현 -->
+	<delete id="deleteQboard">
+		delete qboard where mid = #{mid} and productid = #{productid}
+	</delete>
+	
+	<!-- Q&A 문의 삭제 -->
+	<!-- on delete cascade로 관리자 답변까지 삭제 구현 -->
+	<delete id="deleteAdmin">
+		delete qboard where mid = #{mid} and productid = #{productid}
+	</delete>
+	
+	<!-- Q&A 문의 수정 -->
+	<update id="updateQboard">
+		update qboard set qcontent = #{qcontent}
+			where qno = #{qno} and productid = #{productid}
+	</update>
+	
+	<!-- Q&A 특정 게시물 -->
+	<select id="selectQboard" resultType="String">
+		select qcontent from qboard where productid = #{productid} and qno = #{qno}
+	</select>
+	
+	<!-- 관리자 답변 보기 -->
+	<select id="selectAnswer" resultType="String">
+		select qcontent from qboard where productid = #{productid} and qrno = #{qno}
+	</select>
+	
+	<!-- 관리자 Q&A 조회하기 -->
+	<select id="QnAListQboard" resultType="com.spring.allmybeauty.product.detail.domain.QboardVO">
+<!-- 			select qno, productid, mid, qcontent, qanswerno, qdate, qrno, lvl
+			from(select rownum rn, b.*
+				from (select level lvl, a.*
+  					from (select * from qboard)a where productid = #{productid} and not mid = 'admin'
+  							start with qrno is null
+							connect by prior qno = qrno
+							order siblings by qdate desc)b where rownum <= #{pageNum} * #{rowAmountPerPage} )
+							where rn >= ( ( #{pageNum} * #{rowAmountPerPage} ) - (#{rowAmountPerPage} - 1 ) ) -->
+		
+		<![CDATA[					
+			select qno, productid, mid, qcontent, qanswerno, qdate, qrno
+			from(select rownum rn, b.*
+				from (select a.*
+  					from (select * from qboard)a where productid = #{productid}  and not mid = 'admin'
+  										]]>	
+							  			<if test='scope!=null and !scope.equals("")'>
+						  					<choose>
+								               <when test="scope == 1">and qanswerno = 1</when>
+								               <when test="scope == 2">and qanswerno = 0</when>
+									        </choose>
+			        					</if>
+			        					
+			        					<if test='startDate != null and !startDate.equals("") and endDate != null and !endDate.equals("")'>
+			        						  AND qdate  BETWEEN #{startDate} AND #{endDate}
+			        					</if>
+		<![CDATA[			order by qno desc)b where rownum <= #{pageNum} * #{rowAmountPerPage} )
+							where rn >= ( ( #{pageNum} * #{rowAmountPerPage} ) - (#{rowAmountPerPage} - 1 ) )
+		]]>
+	</select>
+	
+	<!--관리자 Q&A 총 개수 확인 -->
+	<select id="QnAselectQboardTotal" resultType="int">
+	<![CDATA[	
+		select count(*)
+		from qboard
+		where productid = #{productid} and not mid = 'admin'
+	]]>	
+					<if test='scope!=null and !scope.equals("")'>
+	  					<choose>
+			               <when test="scope == 1">and qanswerno = 1</when>
+			               <when test="scope == 2">and qanswerno = 0</when>
+				        </choose>
+      				</if>	
+	</select> 
+	
+	<!-- 관리자 답변 -->
+ 	<insert id="insertAdmin">
+		<selectKey keyProperty="qno" order="BEFORE" resultType="int">
+			select sq_qboard_qno.nextval from dual
+		</selectKey>
+			insert into qboard values(#{qno}, #{productid}, #{mid}, #{qcontent}, default, default, #{qrno})
+	</insert>
+	
+	<!-- 관리자 답변 시 qanswerno 1로 변경 -->
+	<update id="qansernoAdmin">
+		update qboard
+			set qanswerno = 1
+			where qno = #{qrno} and productid = #{productid}
+	</update>
+	
+
+</mapper>

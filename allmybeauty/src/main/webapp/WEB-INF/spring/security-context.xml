@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/security 
+						http://www.springframework.org/schema/security/spring-security-5.4.xsd
+						http://www.springframework.org/schema/beans 
+						http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+   <!-- 사용자 password 암호화 처리 빈: BCrypt 방식 암호화 -->
+   <!-- <bean id="bCryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" /> -->
+   <bean id="bCryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
+    
+   <bean id="memberDetailsService"
+ 		 class="com.spring.allmybeauty.common.security.MemberDetailsService"/> 
+   
+   <bean id="myAccessDeniedHandler" 
+   		 class="com.spring.allmybeauty.common.security.MyAccessDeniedHandler" />
+
+   
+   <bean id="myLoginSuccessHandler2" class="com.spring.allmybeauty.common.security.MyLoginSuccessHandler" />
+	
+   <security:http>
+   
+   <!-- <security:csrf disabled="true"/>  -->
+  		<!-- <security:intercept-url pattern="/**" access="permitAll" /> -->
+  		<security:intercept-url pattern="/" access="permitAll" /><!-- 
+  		<security:intercept-url pattern="/member/join" access="permitAll" />
+  		<security:intercept-url pattern="/member/memberIdChk" access="permitAll" /> -->
+
+                                                                             
+  		<security:access-denied-handler error-page="/accessFobiddenError" />
+  		<security:access-denied-handler ref="myAccessDeniedHandler" />
+  		
+  		
+		<!-- 로그인 된 상태에서는 로그인이나 회원가입 화면에 접근 못하도록 함 -->
+<!-- 		<security:intercept-url pattern="/member/join" access="isAnonymous()" />
+		<security:intercept-url pattern="/member/myLogin" access="isAnonymous()" /> -->
+		
+		<!-- 멤버페이지는 멤버만 접근 허용 -->
+		<security:intercept-url pattern="/mypage/**" access="hasRole('ROLE_USER')" />
+		
+		<!-- 정적 리소스는 모두 접근 허용 -->
+		<!-- <security:intercept-url pattern="/resources/**" access="permitAll" /> -->
+		
+		<security:form-login login-page="/member/myLogin" 
+							 login-processing-url="/member/myLogin"
+							 default-target-url="/main"/>
+ 
+ 		<!-- 스프링 시큐리티 자동로그인 : 1주일 유지 -->		
+		<security:remember-me data-source-ref="dataSource"
+							  remember-me-parameter="remember-me"
+		 					  token-validity-seconds ="604800" />
+		 					  
+		<!-- delete-cookies 안먹는거같음 -->
+ 		<!-- <security:logout logout-url="/member/logout"
+ 						 logout-success-url="/"
+ 						 invalidate-session="true"
+ 						 delete-cookies="JSESSIONID,remember-me"/> -->
+ 		<security:logout logout-url="/logout"
+ 						 logout-success-url="/main" />
+		
+   </security:http>
+   
+   <!-- 사용자 정보를 가져와서 인증하는 구성 -->
+   <security:authentication-manager>
+		 <security:authentication-provider user-service-ref="memberDetailsService">
+		 	<security:password-encoder ref="bCryptPasswordEncoder" />
+		 </security:authentication-provider>
+   </security:authentication-manager>
+   
+   <security:global-method-security 
+		pre-post-annotations="enabled"
+		secured-annotations="enabled"/>
+		
+</beans>
